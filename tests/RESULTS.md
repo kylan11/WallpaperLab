@@ -695,3 +695,12 @@ published beta archives retain their original content.
   a video renderer started with `--lab-gpu pci-0000_12_00_0` used about
   **138 MiB** of `drm-memory-vram` on the 610M and about **10 MiB** on the
   7900 XTX, read from `/proc/PID/fdinfo`.
+
+## Visible fullscreen pause (2026-11-08)
+
+- On Hyprland 0.57 with a fullscreen window in a special workspace and another
+  on a different monitor, a renderer on a headless output with the default
+  "pause on fullscreen" policy kept producing new frames (three captures two
+  seconds apart all differed); the previous build froze (identical captures).
+- Reported trigger: one fullscreen window anywhere paused the wallpapers on all
+  monitors, including fullscreen windows in hidden special workspaces.
