@@ -174,6 +174,8 @@ std::vector<std::string> renderArgs(const Item& item,const json& prefs,bool prev
     }
     auto renderPath=item.source.is_null()?item.path:materializeProject(item.path,item.source).string();
     if(preview) {args.insert(args.end(),{"--scaling","fit","--clamp","border","--window","0x0x1100x620","--no-fullscreen-pause",renderPath});return args;}
+    // Background layer keeps shell widgets on the bottom layer (e.g. Caelestia's visualiser) above the wallpaper.
+    args.insert(args.end(),{"--layer","background"});
     int pause=prefs.value("fullscreen_policy",1);if(pause==0)args.push_back("--no-fullscreen-pause");else if(pause==2)args.push_back("--fullscreen-pause-only-active");
     if(monitors.empty())throw std::runtime_error("Nessun monitor Hyprland rilevato");
     auto mode=prefs.value("mode",std::string("span"));
