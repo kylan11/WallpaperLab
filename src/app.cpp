@@ -264,10 +264,8 @@ std::string launch(Item item,json prefs,bool preview,int direction=0) {
         return e.what();
     }
 }
-void init(bool popupOnly=false,bool probeVideos=false) {
-    settings=loadSettings();placements=loadPlacements();refreshRunning();
-    carousel=loadCarousel();shortcut=shortcutSettings();
-    setLanguage(languageIndex(settings.value("language",std::string("it"))));resolveFonts(!popupOnly);
+void loadMonitors() {
+    monitors.clear();monitorLabels.clear();displayData.clear();
     auto result=capture({"hyprctl","monitors","-j"});
     if(!result.empty())try {
         auto rows=json::parse(result[0]);displayData=parseDisplays(rows);
@@ -281,6 +279,12 @@ void init(bool popupOnly=false,bool probeVideos=false) {
         }
         displayDraft=displayCanvas(displayData,settings);
     }catch(...){}
+}
+void init(bool popupOnly=false,bool probeVideos=false) {
+    settings=loadSettings();placements=loadPlacements();refreshRunning();
+    carousel=loadCarousel();shortcut=shortcutSettings();
+    setLanguage(languageIndex(settings.value("language",std::string("it"))));resolveFonts(!popupOnly);
+    loadMonitors();
     refreshRunning();
     if(popupOnly) {
         std::vector<fs::path> projects;for(auto& path:carousel)projects.emplace_back(path.get<std::string>());if(!activePath.empty()&&std::none_of(projects.begin(),projects.end(),[&](const auto& p){return p==activePath;}))projects.emplace_back(activePath);
@@ -821,6 +825,10 @@ int main(int argc,char**argv) {
             if(cmd=="--restore" || cmd=="--apply" || cmd=="--preview" || cmd=="--plan") {
                 if(cmd=="--restore"&&settings.value("mode",std::string())=="single"&&settings.contains("monitor_wallpapers")){
                     int selected=settings.value("screen",0);auto saved=settings["monitor_wallpapers"];
+                    // At login the compositor can list outputs shortly after autostart runs.
+                    auto connected=[&]{return std::any_of(monitors.begin(),monitors.end(),[&](const auto& m){return saved.contains(m);});};
+                    for(int tries=0;tries<50&&!connected();tries++){std::this_thread::sleep_for(std::chrono::milliseconds(200));loadMonitors();}
+                    if(!connected())throw std::runtime_error("Nessuno schermo con un wallpaper salvato è collegato");
                     for(int n=0;n<(int)monitors.size();n++)if(saved.contains(monitors[n])){lab_set_screen(n);auto error=launch(items.at(find(saved[monitors[n]])),settings,false);if(!error.empty())throw std::runtime_error(error);}
                     lab_set_screen(selected);if(settings.value("caelestia_enabled",false)&&lab_current()>=0)syncCaelestia(paletteItem(settings),settings);return 0;
                 }
